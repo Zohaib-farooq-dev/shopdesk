@@ -3,6 +3,15 @@ from fastapi import APIRouter, HTTPException
 router = APIRouter()
 ORDERS: dict[int, dict] = {}
 
+# Allowed transitions. Anything else is a 409 so courier bugs show up instead of corrupting orders.
+TRANSITIONS = {
+    "new": {"paid", "cancelled"},
+    "paid": {"packed", "cancelled"},
+    "packed": {"shipped"},
+    "shipped": {"delivered", "returned"},
+    "delivered": {"returned"},
+}
+
 
 @router.post("")
 def create_order(order: dict):
@@ -16,3 +25,12 @@ def get_order(order_id: int):
     if order_id not in ORDERS:
         raise HTTPException(404, "order not found")
     return ORDERS[order_id]
+
+
+@router.post("/{order_id}/transition")
+def transition(order_id: int, to: str):
+    order = get_order(order_id)
+    if to not in TRANSITIONS.get(order["status"], set()):
+        raise HTTPException(409, f"cannot go from {order['status']} to {to}")
+    order["status"] = to
+    return order

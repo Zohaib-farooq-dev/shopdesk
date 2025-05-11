@@ -32,6 +32,8 @@ def get_order(order_id: int):
 @router.post("/{order_id}/transition")
 def transition(order_id: int, to: str):
     order = get_order(order_id)
+    if to == order["status"]:
+        return order  # gateway and courier webhooks are replayed on timeout; idempotent by design
     if to not in TRANSITIONS.get(order["status"], set()):
         raise HTTPException(409, f"cannot go from {order['status']} to {to}")
     if to == "paid":

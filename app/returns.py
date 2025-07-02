@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app import inventory
+from app.ledger import record_refund
 from app.orders import get_order
 
 router = APIRouter()
@@ -22,6 +23,8 @@ def advance(return_id: int, sellable: bool = True):
     if not item or item["status"] not in FLOW:
         raise HTTPException(409, "return cannot advance")
     item["status"] = FLOW[item["status"]]
+    if item["status"] == "approved":
+        record_refund(item, get_order(item["order_id"]).get("amount", 0.0))
     if item["status"] == "received" and sellable:
         inventory.adjust(item["sku"], item["qty"])
     return item

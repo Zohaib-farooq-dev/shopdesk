@@ -22,6 +22,11 @@ def create_order(order: dict):
     return ORDERS[order_id]
 
 
+@router.get("")
+def list_orders(status: str | None = None):
+    return [o for o in ORDERS.values() if status is None or o["status"] == status]
+
+
 @router.get("/{order_id}")
 def get_order(order_id: int):
     if order_id not in ORDERS:

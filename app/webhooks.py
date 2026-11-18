@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import logging
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
@@ -7,7 +8,8 @@ from app.orders import transition
 from config.settings import COURIER_SECRETS
 
 router = APIRouter()
-EVENT_TO_STATUS = {"picked_up": "shipped", "delivered": "delivered", "returned_to_sender": "returned"}
+log = logging.getLogger(__name__)
+EVENT_TO_STATUS = {"picked_up": "shipped", "attempted": "shipped", "delivered": "delivered", "returned_to_sender": "returned"}
 
 
 @router.post("/courier/{courier}")
@@ -20,4 +22,8 @@ async def courier_event(courier: str, request: Request, x_signature: str = Heade
     if not hmac.compare_digest(expected, x_signature):
         raise HTTPException(401, "bad signature")
     event = await request.json()
-    return transition(int(event["order_id"]), EVENT_TO_STATUS[event["type"]])
+    status = EVENT_TO_STATUS.get(event["type"])
+    if status is None:
+        log.warning("ignoring courier event %s from %s", event["type"], courier)
+        return {"ignored": event["type"]}
+    return transition(int(event["order_id"]), status)

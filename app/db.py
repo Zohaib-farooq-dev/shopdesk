@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "sqlite:///./shopdesk.db"
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+from config.settings import DATABASE_URL
+
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=5)
 SessionLocal = sessionmaker(bind=engine)

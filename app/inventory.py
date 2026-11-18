@@ -11,6 +11,11 @@ def adjust(sku: str, delta: int):
     return {"sku": sku, "on_hand": STOCK[sku], "available": available(sku)}
 
 
+@router.get("/low-stock")
+def low_stock(threshold: int = 5):
+    return [{"sku": sku, "available": available(sku)} for sku in sorted(STOCK) if available(sku) <= threshold]
+
+
 def available(sku: str) -> int:
     return STOCK.get(sku, 0) - RESERVED.get(sku, 0)
 
